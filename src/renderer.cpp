@@ -18,7 +18,7 @@ Renderer::Renderer(const std::size_t screen_width,
   if( TTF_Init() == -1 )
     std::cout<<"SDL_ttf could not initialize! SDL_ttf Error: "<<TTF_GetError()<<"\n";
   // gFont = TTF_OpenFont( "./lazy.ttf", 28 );
-  gFont = TTF_OpenFont( "./Kingthings_Foundation.ttf", 28 );
+  gFont = TTF_OpenFont( "../data/Kingthings_Foundation.ttf", 28 );
   // TTF_SetFontStyle(gFont, 2);
 
   // Initialize SDL
