@@ -1,31 +1,51 @@
 #include "game.h"
 #include <iostream>
 #include "SDL.h"
-
+#include "menu.h"
+// #include<thread>
+// #include<chrono>
 Game::Game(std::size_t grid_width, std::size_t grid_height)
     : snake(grid_width, grid_height),
+      grid_h(grid_height),
+      grid_w(grid_width),
       engine(dev()),
       random_w(0, static_cast<int>(grid_width - 1)),
-      random_h(0, static_cast<int>(grid_height - 1)) {
-  PlaceFood();
+      random_h(0, static_cast<int>(grid_height - 1)),
+      running(false),
+      onMenu(true) {
+        std::cout<<"random_w: "<<random_w<<" random_h: "<<random_h<<"\n";
+        // start with main menu
+        stMenu.push(new StartMenu());
 }
 
-void Game::Run(Controller const &controller, Renderer &renderer,
+void Game::Run(Controller  const &controller, Renderer &renderer,
                std::size_t target_frame_duration) {
   Uint32 title_timestamp = SDL_GetTicks();
   Uint32 frame_start;
   Uint32 frame_end;
   Uint32 frame_duration;
   int frame_count = 0;
-  bool running = true;
+  running = true;
+
+
 
   while (running) {
     frame_start = SDL_GetTicks();
 
     // Input, Update, Render - the main game loop.
-    controller.HandleInput(running, snake);
-    Update();
-    renderer.Render(snake, food);
+    if(onMenu) {
+      controller.HandleMenuInput(running, *(stMenu.top()), snake, *this);
+      renderer.Render(*(stMenu.top()));
+      
+    }
+      
+    else {
+      controller.HandleInput(running, snake, *this);
+      Update();
+      renderer.Render(snake, food);
+    }
+
+    
 
     frame_end = SDL_GetTicks();
 
@@ -66,7 +86,10 @@ void Game::PlaceFood() {
 }
 
 void Game::Update() {
-  if (!snake.alive) return;
+  if (!snake.alive) {
+    stMenu.push(new EndMenu());
+    onMenu = true;
+  }
 
   snake.Update();
 
@@ -83,5 +106,19 @@ void Game::Update() {
   }
 }
 
+void Game::Quit() {
+  running = false;
+}
 int Game::GetScore() const { return score; }
 int Game::GetSize() const { return snake.size; }
+
+void Game::Reset() {
+  running = true;
+  snake.alive = true;
+  snake.body.clear();
+  score = 0;
+  snake.size = 1;
+  snake.head_x = grid_w/2;
+  snake.head_y = grid_h/2;
+  snake.speed = 0.1f;
+}
