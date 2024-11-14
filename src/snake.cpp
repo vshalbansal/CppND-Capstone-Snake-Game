@@ -1,26 +1,30 @@
 #include "snake.h"
 #include <cmath>
 #include <iostream>
+#include<unordered_set>
+#include<functional>
+
 
 void Snake::Update() {
   SDL_Point prev_cell{
       static_cast<int>(head_x),
-      static_cast<int>(
-          head_y)};  // We first capture the head's cell before updating.
+      static_cast<int>(head_y)};  // We first capture the head's cell before updating.
   UpdateHead();
   SDL_Point current_cell{
       static_cast<int>(head_x),
       static_cast<int>(head_y)};  // Capture the head's cell after updating.
 
-  // Update all of the body vector items if the snake head has moved to a new
-  // cell.
+  // Update all of the body vector items if the snake head has moved to a new cell.
   if (current_cell.x != prev_cell.x || current_cell.y != prev_cell.y) {
     UpdateBody(current_cell, prev_cell);
+    changed_dir = true;
+  // Notify Controller that Snake has changed direction after input
+    cv_update.notify_one();
   }
+  
 }
 
 void Snake::UpdateHead() {
-  // _mutex.lock();
   switch (direction) {
     case Direction::kUp:
       head_y -= speed;
@@ -38,7 +42,6 @@ void Snake::UpdateHead() {
       head_x += speed;
       break;
   }
-  // _mutex.unlock();
 
   // Wrap the Snake around to the beginning if going off of the screen.
   head_x = fmod(head_x + grid_width, grid_width);
@@ -48,34 +51,64 @@ void Snake::UpdateHead() {
 void Snake::UpdateBody(SDL_Point &current_head_cell, SDL_Point &prev_head_cell) {
   // Add previous head location to vector
   body.push_back(prev_head_cell);
+  // umset_body.insert(std::make_pair(prev_head_cell.x,prev_head_cell.y));
+  umset_body.insert(std::to_string(prev_head_cell.x)+","+std::to_string(prev_head_cell.y));
 
   if (!growing) {
     // Remove the tail from the vector.
+    
+    std::unordered_multiset<std::string>::iterator umt_itr = umset_body.find(std::to_string(body.begin()->x)+","+std::to_string(body.begin()->y));
+    umset_body.erase(umt_itr);
     body.erase(body.begin());
-  } else {
+    
+  } 
+  else {
     growing = false;
     size++;
   }
 
+
   // Check if the snake has died.
-  for (auto const &item : body) {
-    if (current_head_cell.x == item.x && current_head_cell.y == item.y) {
-      alive = false;
-    }
-  }
+  if(can_die==true && umset_body.find(std::to_string(current_head_cell.x)+","+std::to_string(current_head_cell.y)) != umset_body.end())
+    alive = false;
+
+
+  // for (auto const &item : body) {
+  //   if (can_die==true && current_head_cell.x == item.x && current_head_cell.y == item.y) {
+  //     alive = false;
+  //   }
+  // }
 }
 
 void Snake::GrowBody() { growing = true; }
 
-// Inefficient method to check if cell is occupied by snake.
+// Efficient method to check if cell is occupied by snake.
 bool Snake::SnakeCell(int x, int y) {
   if (x == static_cast<int>(head_x) && y == static_cast<int>(head_y)) {
     return true;
   }
-  for (auto const &item : body) {
-    if (x == item.x && y == item.y) {
-      return true;
-    }
-  }
-  return false;
+  // if(umset_body.find(std::make_pair(x,y)) != umset_body.end())
+  if(umset_body.find(std::to_string(x)+","+std::to_string(y)) != umset_body.end())
+    return true;
+  else
+    return false;
+  // for (auto const &item : body) {
+  //   if (x == item.x && y == item.y) {
+  //     return true;
+  //   }
+  // }
+  // return false;
+}
+
+// Reset Snake attributes
+void Snake::Reset() {
+  alive = true;
+  body.clear();
+  umset_body.clear();
+  size = 1;
+  head_x = grid_width/2;
+  head_y = grid_height/2;
+  speed = 0.1f;
+  direction = Direction::kUp;
+  
 }

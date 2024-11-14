@@ -4,52 +4,55 @@
 #include<vector>
 #include<string>
 #include<iostream>
+#include"scoreManager.h"
 
-class Game;
-class Snake;
+// class Game;
+enum class MENU_ACTION {START, SELECT_SPEED, HIGH_SCORE, EXIT, ESCAPE, RESTART, RESUME, EASY, NORMAL, HARD, EXPERT};
 class Menu {
     public:
     virtual ~Menu(){}
-    void SelectItem(int indx);
-    // void AddItem(std::string item);
-    int GetSelectedIndx();
-    // std::string GetSelectedItem();
-    std::string GetItem(int indx);
+    void Select(int indx);
+    int Selected();
+    std::string Option(int indx);
     int Size();
-    virtual void Action(Snake &snake, Game &game) {}
+    virtual MENU_ACTION Action() {return MENU_ACTION::ESCAPE;}
 
     protected:
-    std::vector<std::string> items;
-    int selected_item_indx = 0;
+    std::vector<std::string> options;
+    int selected_option = 0;
     
 };
 
 class StartMenu : public Menu {
     public:
     StartMenu();
-    void Action(Snake &snake, Game &game) override;
+    MENU_ACTION Action() override;
 
 };
 
 class PauseMenu : public Menu {
     public:
     PauseMenu();
-    void Action(Snake &snake, Game &game) override;
+    MENU_ACTION Action() override;
 
 };
 
 class SpeedMenu : public Menu {
     public:
     SpeedMenu();
-    void Action(Snake &snake, Game &game) override;
-
+    MENU_ACTION Action() override;
 };
 
 class EndMenu : public Menu {
     public:
     EndMenu();
-    void Action(Snake &snake, Game &game) override;
+    MENU_ACTION Action() override;
+};
 
+class ScoreMenu: public Menu {
+    public:
+    ScoreMenu(std::vector<ScoreStat> top_score_list);
+    MENU_ACTION Action() override;
 };
 
 #endif

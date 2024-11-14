@@ -4,80 +4,140 @@
 #include "snake.h"
 #include "menu.h"
 #include "game.h"
+#include<mutex>
+#include<memory>
+#include<thread>
 
 void Controller::ChangeDirection(Snake &snake, Snake::Direction input, Snake::Direction opposite) const {
-  // snake._mutex.lock();
-  if (snake.direction != opposite || snake.size == 1) snake.direction = input;
-  // snake._mutex.unlock();
+  
+  if (snake.alive && (snake.direction != opposite || snake.size == 1)) {
+    snake.direction = input;
+    snake.changed_dir = false;
+    std::unique_lock<std::mutex> lck(snake._mutex_dir);
+    snake.cv_update.wait(lck,[&snake](){return snake.changed_dir;});
+  }
   return;
 }
 
-void Controller::HandleMenuInput(bool &running, Menu &menu, Snake &snake, Game &game) const{
-  // std::cout<<"inside handle menu input method\n";
+
+void Controller::Start(std::shared_ptr<Game> game) {
+  std::cout<<"controller started\n";
+  SDL_StartTextInput();
   SDL_Event e;
-  while(SDL_PollEvent(&e))
-  {
-    // std::cout<<"polling std_pollEvent\n";
-    if (e.type ==SDL_QUIT) {
-      // std::cout<<"e_type sdl quit\n";
-      running = false;
+  while(game->state!=GAMESTATE::END) {
+    SDL_PollEvent(&e);
+    if (e.type == SDL_QUIT) {
+      game->state = GAMESTATE::END;
+      game->cv_game.notify_one();
+      return;
     }
-    else if(e.type == SDL_KEYDOWN) {
-      // std::cout<<"handling input menu\n";
-      switch (e.key.keysym.sym) {
-        case SDLK_UP:
-          menu.SelectItem((menu.GetSelectedIndx()-1) % menu.Size());
+    else {
+      switch(game->state) {
+        case GAMESTATE::NAME_INPUT:
+          HandleTextInput(game,e); 
           break;
-        case SDLK_DOWN:
-          menu.SelectItem((menu.GetSelectedIndx()+1) % menu.Size());
+        case GAMESTATE::ON_MENU:
+          HandleMenuInput(game->GetCurrentMenu(), game, e);
           break;
-        case SDLK_RETURN:
-          std::cout<<"Enter pressed\n";
-          menu.Action(snake, game);
-          break;
-        case SDLK_ESCAPE:
-          game.stMenu.pop();
-          if(game.stMenu.empty())
-            game.onMenu = false;
+        case GAMESTATE::RUNNING:
+          HandleGameInput( game->snake, game, e);
           break;
       }
+      
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    
+  }
+}
+
+
+void Controller::HandleMenuInput(Menu *menu, std::shared_ptr<Game> game, SDL_Event &e) const {
+  
+  if(e.type == SDL_KEYDOWN) {
+    switch (e.key.keysym.sym) {
+      case SDLK_UP:
+        menu->Select((((menu->Selected()-1) % menu->Size()) + menu->Size()) % menu->Size());
+        break;
+      case SDLK_DOWN:
+        menu->Select( (menu->Selected()+1) % menu->Size() );
+        break;
+      case SDLK_RETURN:
+        game->menu_action = menu->Action();
+        game->do_menu_action = true;
+        game->cv_game.notify_one();
+        break;
+      case SDLK_ESCAPE:
+        game->menu_action = MENU_ACTION::ESCAPE;
+        game->do_menu_action = true;
+        game->cv_game.notify_one();
+        break;
+    }      
   }
 
 }
-void Controller::HandleInput(bool &running, Snake &snake, Game &game) const {
-  SDL_Event e;
-  while (SDL_PollEvent(&e)) {
-    if (e.type == SDL_QUIT) {
-      running = false;
-    } else if (e.type == SDL_KEYDOWN) {
-      switch (e.key.keysym.sym) {
-        case SDLK_UP:
-          ChangeDirection(snake, Snake::Direction::kUp,
-                          Snake::Direction::kDown);
-          break;
 
-        case SDLK_DOWN:
-          ChangeDirection(snake, Snake::Direction::kDown,
-                          Snake::Direction::kUp);
-          break;
 
-        case SDLK_LEFT:
-          ChangeDirection(snake, Snake::Direction::kLeft,
-                          Snake::Direction::kRight);
-          break;
 
-        case SDLK_RIGHT:
-          ChangeDirection(snake, Snake::Direction::kRight,
-                          Snake::Direction::kLeft);
-          break;
-        case SDLK_ESCAPE:
-          game.onMenu = true;
-          game.stMenu.push(new PauseMenu());
-          // open pause menu
-          break;
-      }
+void Controller::HandleGameInput(Snake &snake, std::shared_ptr<Game> game, SDL_Event &e)  const {
+  // SDL_Event e;
+  
+  if (e.type == SDL_KEYDOWN) {
+    switch (e.key.keysym.sym) {
+      case SDLK_UP:
+        ChangeDirection(snake, Snake::Direction::kUp,
+                        Snake::Direction::kDown);
+        break;
+
+      case SDLK_DOWN:
+        ChangeDirection(snake, Snake::Direction::kDown,
+                        Snake::Direction::kUp);
+        break;
+
+      case SDLK_LEFT:
+        ChangeDirection(snake, Snake::Direction::kLeft,
+                        Snake::Direction::kRight);
+        break;
+
+      case SDLK_RIGHT:
+        ChangeDirection(snake, Snake::Direction::kRight,
+                        Snake::Direction::kLeft);
+        break;
+      case SDLK_ESCAPE:
+        game->state = GAMESTATE::PAUSED;      
+        break;
     }
   }
+}
+
+void Controller::HandleTextInput(std::shared_ptr<Game> game, SDL_Event &e) {
+
+  if(e.type == SDL_TEXTINPUT) {
+    if( !( SDL_GetModState() & KMOD_CTRL && ( std::toupper(e.text.text[ 0 ]) == 'C' || std::toupper(e.text.text[ 0 ]) == 'V' ) ) ) {
+      //Append character, maximum allowed size for player name is 20
+      if(game->player_name.size()<=20)
+        game->player_name += std::string(e.text.text);
+    }
+  }
+  else if(e.type == SDL_KEYDOWN) {
+    if(e.key.keysym.sym == SDLK_BACKSPACE && game->player_name.length()>0) {
+      game->player_name.pop_back();
+    }
+    // else if(e.key.keysym.sym == SDLK_v  && KMOD_CTRL && SDL_GetModState()) {
+    //   SDL_SetClipboardText(game->player_name.c_str());
+    // }
+    // else if( KMOD_CTRL && SDL_GetModState() && e.key.keysym.sym == SDLK_v ) {
+
+    //   char* tempText = SDL_GetClipboardText();
+    //   game->player_name = std::string(tempText);
+    //   SDL_free( tempText );
+      
+    // }
+    else if(e.key.keysym.sym == SDLK_ESCAPE || e.key.keysym.sym == SDLK_RETURN) {
+      if(game->player_name == "")
+        game->player_name = "Anonymous";
+      game->state = GAMESTATE::BEGIN;
+      SDL_StopTextInput();
+      game->cv_game.notify_one();
+
+    }
+  }  
 }

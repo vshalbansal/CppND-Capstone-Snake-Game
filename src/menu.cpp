@@ -1,116 +1,123 @@
 #include<iostream>
 #include "menu.h"
-#include "game.h"
-// #include<thread>
+// #include "game.h"
+// #include"scoreManager.h"
 
-int Menu::GetSelectedIndx() {
-    return selected_item_indx;
+int Menu::Selected() {
+    return selected_option;
 }
-void Menu::SelectItem(int indx) {
-    selected_item_indx = indx;
+void Menu::Select(int indx) {
+    selected_option = indx;
 }
 
-int Menu::Size() {return items.size();}
+int Menu::Size() {return options.size();}
 
 
-std::string Menu::GetItem(int indx) {
-    return items[indx];
+std::string Menu::Option(int indx) {
+    return options[indx];
 }
 
 StartMenu::StartMenu() {
-    items.push_back("Start");
-    items.push_back("Select Difficulty");
-    items.push_back("Exit");
+    options.push_back("Start");
+    options.push_back("Select Difficulty");
+    options.push_back("High Score");
+    options.push_back("Exit");
 }
-void StartMenu::Action (Snake &snake, Game &game) {
-    std::cout<<"inside startmenu action\n";
-    switch (selected_item_indx) {
+MENU_ACTION StartMenu::Action ( ) {
+    switch (selected_option) {
         // start game
         case 0:
-            game.Reset();
-            // create a new thread for update
-            game.onMenu = false;
-            break;
+            return MENU_ACTION::START;
         // open speed selection menu
         case 1:
-            game.stMenu.push(new SpeedMenu());
-            break;
-        // exit game
+            return MENU_ACTION::SELECT_SPEED;
+        // show top 5 game scores
         case 2:
-            game.Quit();
-            break;
+            return MENU_ACTION::HIGH_SCORE;
+        // exit game
+        case 3:
+            return MENU_ACTION::EXIT;
     }
+    return MENU_ACTION::ESCAPE;
 }
 
 PauseMenu::PauseMenu() {
-    items.push_back("Restart");
-    items.push_back("Resume");
-    items.push_back("Exit");
+    options.push_back("Restart");
+    options.push_back("Resume");
+    options.push_back("High Score");
+    options.push_back("Exit");
 }
 
-void PauseMenu::Action(Snake &snake, Game &game) {
-    switch (selected_item_indx) {
+MENU_ACTION PauseMenu::Action( ) {
+    switch (selected_option) {
         //restart game
         case 0:
-            game.Reset();
-            game.stMenu.pop();
-            game.stMenu.push(new StartMenu());
-            break;
+            return MENU_ACTION::RESTART;
         // resume game
-        case 1:
-            game.stMenu.pop();
-            game.onMenu = false;
-            break;
-        //quit game
+        case 1: 
+            return MENU_ACTION::RESUME;
+        // show game top scores
         case 2:
-            game.Quit();
-            break;
+            return MENU_ACTION::HIGH_SCORE;
+        //quit game
+        case 3: 
+            return MENU_ACTION::EXIT;
 
     }
+    return MENU_ACTION::ESCAPE;
 }
 
 SpeedMenu::SpeedMenu() {
-    items.push_back("Easy");
-    items.push_back("Normal");
-    items.push_back("Hard");
-    items.push_back("Expert");
+    options.push_back("Easy");
+    options.push_back("Normal");
+    options.push_back("Hard");
+    options.push_back("Expert");
 }
-void SpeedMenu::Action(Snake &snake, Game &game) {
-    game.Reset();
-    switch (selected_item_indx) {
+MENU_ACTION SpeedMenu::Action( ) {
+    switch (selected_option) {
         case 0:
-            snake.speed = 0.05f;
-            break;
+            return MENU_ACTION::EASY;
         case 1:
-            snake.speed = 0.1f;
-            break;
+            return MENU_ACTION::NORMAL;
         case 2:
-            snake.speed = 0.15f;
-            break;
+            return MENU_ACTION::HARD;
         case 3:
-            snake.speed = 0.2f;
-            break;
+            return MENU_ACTION::EXPERT;
     }
-    game.stMenu.pop();
-    game.onMenu = false;
-    // std::cout<<game.onMenu<<"\n";
+    return MENU_ACTION::ESCAPE;
 }
 
 
-EndMenu::EndMenu() {
-    items.push_back("Restart");
-    items.push_back("Exit");
+EndMenu::EndMenu( ) {
+    options.push_back("Restart");
+    options.push_back("High Score");
+    options.push_back("Exit");
 }
-void EndMenu::Action(Snake &snake, Game &game) {
-    // game.Reset();
-    switch (selected_item_indx) {
+MENU_ACTION EndMenu::Action( ) {
+    switch (selected_option) {
         // restart game
-        case 0:
-            game.stMenu.pop();
-            game.stMenu.push(new StartMenu());
-            break;
-        // quit game
+        case 0: 
+            return MENU_ACTION::RESTART;
+        // show game top scores
         case 1:
-            game.Quit();
+            return MENU_ACTION::HIGH_SCORE;
+        // quit game
+        case 2:
+            return MENU_ACTION::EXIT;
     }
+    return MENU_ACTION::ESCAPE;
+}
+
+ScoreMenu::ScoreMenu(std::vector<ScoreStat> top_score_list) {
+    if(top_score_list.empty())
+        options.push_back("Be The First Top Scorer");
+    else {
+        for(auto a:top_score_list) {
+        options.push_back(a.name+"  "+std::to_string(a.score)+"  "+a.timestamp);
+        }
+    }
+}
+MENU_ACTION ScoreMenu::Action( ) {
+    return MENU_ACTION::ESCAPE;
+
 }

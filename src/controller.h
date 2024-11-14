@@ -1,15 +1,20 @@
+
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
 #include "snake.h"
 #include "menu.h"
+#include<memory>
 
 class Game;
 class Controller {
  public:
-  void HandleInput(bool &running, Snake &snake, Game &game) const;
+    void Start(std::shared_ptr<Game> game);
+  void HandleGameInput(Snake &snake, std::shared_ptr<Game> game, SDL_Event &e) const;
 
-  void HandleMenuInput(bool &running, Menu &menu, Snake &snake, Game &game) const;
+  void HandleMenuInput(Menu *menu, std::shared_ptr<Game> game, SDL_Event &e) const;
+
+  void HandleTextInput(std::shared_ptr<Game> game, SDL_Event &e);
 
  private:
   void ChangeDirection(Snake &snake, Snake::Direction input,
