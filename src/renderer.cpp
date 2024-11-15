@@ -33,8 +33,8 @@ Renderer::Renderer(const std::size_t screen_width,
           return;
         }
         // Load Fonts for Score and Timers
-        state_fonts = TTF_OpenFont("../data/OpenSans-VariableFont_wdth,wght.ttf", 16);
-        if(state_fonts == NULL) {
+        stat_fonts = TTF_OpenFont("../data/OpenSans-VariableFont_wdth,wght.ttf", 16);
+        if(stat_fonts == NULL) {
           std::cout<<"Failed to load game stat font! SDL_ttf Error: "<< TTF_GetError()<<"\n";
           return;
         }
@@ -102,11 +102,11 @@ void Renderer::Render(Menu *menu,std::shared_ptr<Game> game) {
 //   TTF_SetFontSize(menu_fonts, menu->font_size);
 
   if(!game->snake.alive) {
-    LoadText("Game Over", menu_fonts, textColor);
+    AddTextToRenderer("Game Over", menu_fonts, textColor);
     RenderText((screen_width-textSurfaceWidth)/2, 0);
     // Final Score
     std::string final_score_str = "Your Score : "+std::to_string(game->GetScore());
-    LoadText(final_score_str, menu_fonts, textColor);
+    AddTextToRenderer(final_score_str, menu_fonts, textColor);
     RenderText((screen_width-textSurfaceWidth)/2, textSurfaceHeight);
   }
   for(int i=0;i<menu->Size();i++) {
@@ -114,7 +114,7 @@ void Renderer::Render(Menu *menu,std::shared_ptr<Game> game) {
       textColor = {255,0,0};
     else
       textColor = 	{255,255,255};
-    LoadText(menu->Option(i), menu_fonts, textColor);
+    AddTextToRenderer(menu->Option(i), menu_fonts, textColor);
     SDL_SetRenderDrawColor( sdl_renderer, 0xFF, 0xFF, 0xFF, 0xFF );
     RenderText((screen_width-textSurfaceWidth )/2, (screen_height-textSurfaceHeight*menu->Size())/2 + i*textSurfaceHeight);
   }
@@ -127,19 +127,19 @@ void Renderer::Render(std::string player_name) {
   SDL_RenderClear(sdl_renderer);
   textColor = 	{255,255,255};
   std::string namePrompt = "Enter Your Name";
-  LoadText(namePrompt, menu_fonts, textColor);
+  AddTextToRenderer(namePrompt, menu_fonts, textColor);
   RenderText((screen_width-textSurfaceWidth)/2, 0);
 
   textColor = 	{255,0,0};
   if(player_name!="")
-    LoadText(player_name, menu_fonts, textColor);
+    AddTextToRenderer(player_name, menu_fonts, textColor);
   else
-    LoadText("(Type Your Name Here)", menu_fonts, textColor);
+    AddTextToRenderer("(Type Your Name Here)", menu_fonts, textColor);
   RenderText((screen_width-textSurfaceWidth)/2, (screen_height-textSurfaceHeight)/2);
 
   std::string nameInstruction = "Press Esc to Continue as Anonymous";
   textColor = 	{255,255,255};
-  LoadText(nameInstruction, menu_fonts, textColor);
+  AddTextToRenderer(nameInstruction, menu_fonts, textColor);
   RenderText((screen_width-textSurfaceWidth)/2, (screen_height-textSurfaceHeight));
 
 }
@@ -153,24 +153,25 @@ void Renderer::Render(Snake const &snake, Food* normal_food, Food* super_food, /
   
   
   // Render food
-  std::lock_guard<std::mutex> lck_grd_food(game->mtx_food);
+  std::unique_lock<std::mutex> uLock_food(game->mtx_food);
   if(normal_food) {
     SDL_SetRenderDrawColor(sdl_renderer, normal_food->color.r, normal_food->color.g, normal_food->color.b, normal_food->color.a);
-    SetBlock(normal_food->point.x, normal_food->point.y,normal_food->size,normal_food->size);
+    AddBlockToRenderer(normal_food->point.x, normal_food->point.y,normal_food->size,normal_food->size);
   }
   if(super_food) {
     SDL_SetRenderDrawColor(sdl_renderer, super_food->color.r, super_food->color.g, super_food->color.b, super_food->color.a);
-    SetBlock(super_food->point.x, super_food->point.y,super_food->size,super_food->size);
+    AddBlockToRenderer(super_food->point.x, super_food->point.y,super_food->size,super_food->size);
 
   }
+  uLock_food.unlock();
 
   // Render snake's body  
   SDL_SetRenderDrawColor(sdl_renderer, snake.color.r, snake.color.g,snake.color.b,snake.color.a);
 
   std::unique_lock<std::mutex> uLockSnake(game->mtx_snake);
   for(auto point = snake.body.begin();point!=snake.body.end();point++) {
-    // SetBlock(block, point->x * block.w, point->y * block.h);
-    SetBlock( point->x , point->y,1,1);
+    // AddBlockToRenderer(block, point->x * block.w, point->y * block.h);
+    AddBlockToRenderer( point->x , point->y,1,1);
   }
 
   // Render snake's head
@@ -180,7 +181,7 @@ void Renderer::Render(Snake const &snake, Food* normal_food, Food* super_food, /
   else {
     SDL_SetRenderDrawColor(sdl_renderer, 0xFF, 0x00, 0x00, 0xFF);
   }
-  SetBlock(static_cast<int>(snake.head_x), static_cast<int>(snake.head_y), 1,1);
+  AddBlockToRenderer(static_cast<int>(snake.head_x), static_cast<int>(snake.head_y), 1,1);
   uLockSnake.unlock();
   
   //Add Score to the Game 
@@ -196,12 +197,12 @@ void Renderer::Render(Snake const &snake, Food* normal_food, Food* super_food, /
 
 void Renderer::RenderFPS(std::shared_ptr<Game> game) {
   std::string fps = "FPS : "+std::to_string(game->GetFPS());
-  LoadText(fps, state_fonts, textColor);
+  AddTextToRenderer(fps, stat_fonts, textColor);
   RenderText(screen_width-textSurfaceWidth, screen_height-textSurfaceHeight);
 }
 
 
-void Renderer::SetBlock(int x, int y, int h, int w) {
+void Renderer::AddBlockToRenderer(int x, int y, int h, int w) {
   SDL_Rect block;
   block.w = (screen_width / grid_width);
   block.h = (screen_height / grid_height);
@@ -219,12 +220,12 @@ void Renderer::RenderScore(std::shared_ptr<Game> game) {
   // Render Current Score
   std::string score_str = "Score : "+std::to_string(game->GetScore());
   textColor = 	{255,0,0};
-  LoadText(score_str, state_fonts, textColor);
+  AddTextToRenderer(score_str, stat_fonts, textColor);
   RenderText(0,0);
 
   // Render High Score
   std::string high_score = "High Score : "+std::to_string(game->GetTopScore());
-  LoadText(high_score,state_fonts, textColor);
+  AddTextToRenderer(high_score,stat_fonts, textColor);
   RenderText(screen_width-textSurfaceWidth, 0);
 }
 
@@ -233,21 +234,21 @@ void Renderer::RenderTimers(std::shared_ptr<Game> game){
   // Add super food timer to renderer
   if(game->GetSuperFoodRemainingTimer()>0) {
     std::string super_food_timer_str = "Super Food : " + std::to_string(game->GetSuperFoodRemainingTimer());
-    LoadText(super_food_timer_str, state_fonts, textColor);
+    AddTextToRenderer(super_food_timer_str, stat_fonts, textColor);
     RenderText(0, textSurfaceHeight);
   }
 
   // Add super snake timer to renderer
   if(game->GetSuperSnakeRemainingTimer()>0) {
     std::string supersnake_timer_str = "Super Snake : " + std::to_string(game->GetSuperSnakeRemainingTimer());
-    LoadText(supersnake_timer_str, state_fonts, textColor);
+    AddTextToRenderer(supersnake_timer_str, stat_fonts, textColor);
     RenderText(0,2*textSurfaceHeight);
   }
 }
 
 
 // Create text surface from text
-void Renderer::LoadText(std::string textureText, TTF_Font *fonts, SDL_Color textColor) {
+void Renderer::AddTextToRenderer(std::string textureText, TTF_Font *fonts, SDL_Color textColor) {
   SDL_Surface* textSurface = TTF_RenderText_Solid( fonts, textureText.c_str(), textColor);
   if( textSurface != NULL ) {
 		//Create texture from surface
