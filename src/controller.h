@@ -14,7 +14,7 @@ class Controller {
 
   void HandleMenuInput(Menu *menu, std::shared_ptr<Game> game, SDL_Event &e) const;
 
-  void HandleTextInput(std::shared_ptr<Game> game, SDL_Event &e);
+  void HandleTextInput(std::shared_ptr<Game> game, SDL_Event &e, std::string &player_name);
 
  private:
   void ChangeDirection(Snake &snake, Snake::Direction input,

@@ -256,6 +256,15 @@ void Game::MenuAction() {
   }
 }
 
+void Game::SetPlayerName(std::string name) {
+  // if(name=="")
+  //   player_name = "Anonymous";
+  if(name.size()<=20)
+    player_name = name;
+  else
+    player_name = name.substr(0,20);
+}
+
 // get current game score
 int Game::GetScore() const { return score; }
 

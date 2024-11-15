@@ -24,6 +24,7 @@ void Controller::Start(std::shared_ptr<Game> game) {
   std::cout<<"controller started\n";
   SDL_StartTextInput();
   SDL_Event e;
+  std::string player_name = "";
   while(game->state!=GAMESTATE::END) {
     SDL_PollEvent(&e);
     if (e.type == SDL_QUIT) {
@@ -34,7 +35,7 @@ void Controller::Start(std::shared_ptr<Game> game) {
     else {
       switch(game->state) {
         case GAMESTATE::NAME_INPUT:
-          HandleTextInput(game,e); 
+          HandleTextInput(game,e,player_name); 
           break;
         case GAMESTATE::ON_MENU:
           HandleMenuInput(game->GetCurrentMenu(), game, e);
@@ -108,18 +109,21 @@ void Controller::HandleGameInput(Snake &snake, std::shared_ptr<Game> game, SDL_E
   }
 }
 
-void Controller::HandleTextInput(std::shared_ptr<Game> game, SDL_Event &e) {
+void Controller::HandleTextInput(std::shared_ptr<Game> game, SDL_Event &e, std::string &player_name) {
 
   if(e.type == SDL_TEXTINPUT) {
     if( !( SDL_GetModState() & KMOD_CTRL && ( std::toupper(e.text.text[ 0 ]) == 'C' || std::toupper(e.text.text[ 0 ]) == 'V' ) ) ) {
       //Append character, maximum allowed size for player name is 20
-      if(game->player_name.size()<=20)
-        game->player_name += std::string(e.text.text);
+      if(player_name.size()<=20) {
+        player_name += std::string(e.text.text);
+        game->SetPlayerName(player_name);
+      }
     }
   }
   else if(e.type == SDL_KEYDOWN) {
-    if(e.key.keysym.sym == SDLK_BACKSPACE && game->player_name.length()>0) {
-      game->player_name.pop_back();
+    if(e.key.keysym.sym == SDLK_BACKSPACE && player_name.length()>0) {
+      player_name.pop_back();
+      game->SetPlayerName(player_name);
     }
     // else if(e.key.keysym.sym == SDLK_v  && KMOD_CTRL && SDL_GetModState()) {
     //   SDL_SetClipboardText(game->player_name.c_str());
@@ -131,9 +135,17 @@ void Controller::HandleTextInput(std::shared_ptr<Game> game, SDL_Event &e) {
     //   SDL_free( tempText );
       
     // }
-    else if(e.key.keysym.sym == SDLK_ESCAPE || e.key.keysym.sym == SDLK_RETURN) {
-      if(game->player_name == "")
-        game->player_name = "Anonymous";
+    else if(e.key.keysym.sym == SDLK_ESCAPE ) {
+      game->SetPlayerName("Anonymous");
+      game->state = GAMESTATE::BEGIN;
+      SDL_StopTextInput();
+      game->cv_game.notify_one();
+    }
+    else if(e.key.keysym.sym == SDLK_RETURN) {
+      if(player_name=="")
+        game->SetPlayerName("Anonymous");
+      else
+        game->SetPlayerName(std::move(player_name));
       game->state = GAMESTATE::BEGIN;
       SDL_StopTextInput();
       game->cv_game.notify_one();

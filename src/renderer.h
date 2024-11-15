@@ -1,20 +1,18 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include <vector>
-// #include "SDL.h"
+
 #include <SDL2/SDL.h> 
-#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
-#include <SDL2/SDL_mixer.h>  
 #include "snake.h"
 #include "menu.h"
-#include<mutex>
 #include"food.h"
+#include"game.h"
 #include<memory>
 #include<string>
-// class Food;
-class Game;
+#include <vector>
+#include<mutex>
+
 
 
 class Renderer {

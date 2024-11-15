@@ -23,6 +23,8 @@ class Game : public std::enable_shared_from_this<Game>{
  public:
   Game(std::size_t grid_width, std::size_t grid_height, std::string score_file);
   void Run(std::size_t target_frame_duration);
+  void SetPlayerName(std::string name);
+  std::string GetPlayerName() const {return player_name;}
   int GetScore() const;
   int GetSize() const;
   Menu* GetCurrentMenu() ;
@@ -32,6 +34,7 @@ class Game : public std::enable_shared_from_this<Game>{
   int GetSuperSnakeRemainingTimer();
   int GetTopScore() ;
   int GetFPS() const;
+  
 
 
   GAMESTATE state;
@@ -42,20 +45,18 @@ class Game : public std::enable_shared_from_this<Game>{
   std::mutex mtx_menu;
   std::mutex mtx_food;
   std::mutex mtx_snake;
+  std::mutex mtx_game;
 
   Snake snake;
-  std::string player_name = "";
+  
 
  private:
   
-  
+  std::string player_name = "";
   int frame_count = 0;
-
-  std::mutex mtx_game;
   std::stack<std::shared_ptr<Menu>> menu_stack;
   std::shared_ptr<Food> normal_food;
   std::shared_ptr<Food> super_food;
-  // std::vector<std::shared_ptr<Food>*> food_list{&normal_food,&super_food};
   int score{0};
   Timer super_food_timer;
   Timer super_snake_timer;

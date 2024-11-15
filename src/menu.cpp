@@ -1,7 +1,6 @@
-#include<iostream>
 #include "menu.h"
-// #include "game.h"
-// #include"scoreManager.h"
+#include<sstream>
+#include<iostream>
 
 int Menu::Selected() {
     return selected_option;
@@ -109,11 +108,20 @@ MENU_ACTION EndMenu::Action( ) {
 }
 
 ScoreMenu::ScoreMenu(std::vector<ScoreStat> top_score_list) {
+    font_size = 20;
     if(top_score_list.empty())
         options.push_back("Be The First Top Scorer");
     else {
+        
         for(auto a:top_score_list) {
-        options.push_back(a.name+"  "+std::to_string(a.score)+"  "+a.timestamp);
+            std::stringstream score_str;
+            score_str.width(22);
+            score_str<<std::left<<a.name;
+            score_str.width(5);
+            score_str<<std::left<<std::to_string(a.score);
+            score_str.width(16);
+            score_str<<std::left<<a.timestamp;
+            options.push_back(score_str.str());
         }
     }
 }

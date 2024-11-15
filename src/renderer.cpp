@@ -1,16 +1,6 @@
 #include "renderer.h"
 #include <iostream>
-#include <string>
-#include <SDL2/SDL.h> 
-#include <SDL2/SDL_image.h>
-#include <SDL2/SDL_ttf.h>
-#include <SDL2/SDL_mixer.h>   
-#include "food.h"
-#include <SDL2_gfxPrimitives.h>
-#include <math.h>
-#include "game.h"
 #include<thread>
-#include<memory>
 #include<chrono>
 
 
@@ -36,7 +26,7 @@ Renderer::Renderer(const std::size_t screen_width,
           std::cout<<"TTF init success.\n";
         
         // Load Fonts for Menu Options
-        menu_fonts = TTF_OpenFont( "../data/Kingthings_Foundation.ttf", 28 );
+        menu_fonts = TTF_OpenFont( "../data/luximb.ttf", 28 );
         if( menu_fonts == NULL ) {
           std::cout<<"Failed to load menu font! SDL_ttf Error: "<< TTF_GetError()<<"\n";
           return;
@@ -77,7 +67,7 @@ void Renderer::Start(std::shared_ptr<Game> game) {
   while(game->state!=GAMESTATE::END) {
     switch(game->state) {
       case GAMESTATE::NAME_INPUT:
-        Render(game->player_name);
+        Render(game->GetPlayerName());
         break;
       case GAMESTATE::ON_MENU: {
         std::lock_guard<std::mutex> lckGrd(game->mtx_menu);
@@ -102,6 +92,7 @@ void Renderer::Render(Menu *menu,std::shared_ptr<Game> game) {
   SDL_SetRenderDrawColor(sdl_renderer, 0x1E, 0x1E, 0x1E, 0xFF);
   SDL_RenderClear(sdl_renderer);
   textColor = 	{255,255,255};
+  TTF_SetFontSize(menu_fonts, menu->font_size);
 
   if(!game->snake.alive) {
     LoadText("Game Over", menu_fonts, textColor);
@@ -118,7 +109,7 @@ void Renderer::Render(Menu *menu,std::shared_ptr<Game> game) {
       textColor = 	{255,255,255};
     LoadText(menu->Option(i), menu_fonts, textColor);
     SDL_SetRenderDrawColor( sdl_renderer, 0xFF, 0xFF, 0xFF, 0xFF );
-    RenderText((screen_width-textSurfaceWidth)/2, (screen_height-textSurfaceHeight)/2 + i*textSurfaceHeight);
+    RenderText((screen_width-textSurfaceWidth )/2, (screen_height-textSurfaceHeight*menu->Size())/2 + i*textSurfaceHeight);
   }
 }
 

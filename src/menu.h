@@ -15,6 +15,7 @@ class Menu {
     int Selected();
     std::string Option(int indx);
     int Size();
+    int font_size = 28;
     virtual MENU_ACTION Action() {return MENU_ACTION::ESCAPE;}
 
     protected:
