@@ -3,19 +3,20 @@
 #include<fstream>
 #include<ctime>
 #include<algorithm>
-#include<filesystem>
+#include<experimental/filesystem>
+#include<iomanip>
 
 
 
 ScoreManager::ScoreManager(std::string file_name):score_file(file_name) {
     
     
-    if(!std::filesystem::exists(file_name)){
-        std::ofstream oscore_stream(score_file);
-    }
-    else {
-        std::ifstream iscore_stream;
-        iscore_stream.open(score_file,std::fstream::in);
+//    if(!std::filesystem::exists(file_name)){
+//        std::ofstream oscore_stream(score_file);
+//    }
+//    else {
+        std::fstream iscore_stream;
+        iscore_stream.open(score_file,std::fstream::in | std::fstream::out);
         std::string score_line;
         if(getline(iscore_stream, score_line)) {
             std::stringstream line_str(score_line);
@@ -25,7 +26,7 @@ ScoreManager::ScoreManager(std::string file_name):score_file(file_name) {
             high_score = std::stoi(word);
         }
         iscore_stream.close();
-    }
+  //  }
     
     
 }

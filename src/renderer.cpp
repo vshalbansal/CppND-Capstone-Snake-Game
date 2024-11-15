@@ -25,13 +25,13 @@ Renderer::Renderer(const std::size_t screen_width,
         else
           std::cout<<"TTF init success.\n";
         
-        // Load Fonts for Menu Options
+        
+		// Load Fonts for Menu Options
         menu_fonts = TTF_OpenFont( "../data/luximb.ttf", 28 );
         if( menu_fonts == NULL ) {
           std::cout<<"Failed to load menu font! SDL_ttf Error: "<< TTF_GetError()<<"\n";
           return;
         }
-
         // Load Fonts for Score and Timers
         state_fonts = TTF_OpenFont("../data/OpenSans-VariableFont_wdth,wght.ttf", 16);
         if(state_fonts == NULL) {
@@ -92,7 +92,14 @@ void Renderer::Render(Menu *menu,std::shared_ptr<Game> game) {
   SDL_SetRenderDrawColor(sdl_renderer, 0x1E, 0x1E, 0x1E, 0xFF);
   SDL_RenderClear(sdl_renderer);
   textColor = 	{255,255,255};
-  TTF_SetFontSize(menu_fonts, menu->font_size);
+  
+  // Load Fonts for Menu Options
+  menu_fonts = TTF_OpenFont( "../data/luximb.ttf", menu->font_size );
+  if( menu_fonts == NULL ) {
+    std::cout<<"Failed to load menu font! SDL_ttf Error: "<< TTF_GetError()<<"\n";
+    return;
+  }
+//   TTF_SetFontSize(menu_fonts, menu->font_size);
 
   if(!game->snake.alive) {
     LoadText("Game Over", menu_fonts, textColor);
