@@ -41,9 +41,9 @@ This is a repo for the Capstone project in the [Udacity C++ Nanodegree Program](
       * line:97 write into score file.
 3. User inputs are accepted through in-game input screens.
     * controller.cpp 
-      * line:112 HandleTextInput function reads player name using SDL_TextInput.
+      * line:104 HandleNameInput function reads player name using SDL_TextInput.
 ### Object Oriented Programming
-1. Multiple new classes are added(Food, Menu, ScoreManager, Timer).
+1. Multiple new classes are added(Food, Menu, ScoreManager).
 2. Classes Food, Game, Renderer use member initialization lists.
 3. Render function is overloaded in class Renderer to render Menu or Game as per the game state.
     * renderer.h
@@ -54,11 +54,11 @@ This is a repo for the Capstone project in the [Udacity C++ Nanodegree Program](
 ### Memory Management
 1. The project uses scope / Resource Acquisition Is Initialization (RAII) in following places:
     * game.cpp
-      * line:92 In Game::Action function each menu stack pop operation ensures proper deallocation of resources as menu options are created using shared pointer.
-      * line:154, line:162 In Game::PlaceFood function swap operation is used to create new food item which releases old food object pointed by the shared pointer.
-2. Move semantic is used to move player name to game object from controller once user presses enter or escape key.
+      * line:188 In Game::MenuAction function each menu stack pop operation ensures proper deallocation of resources once they go out of scope as menu options are created using shared pointer.
+      * line:163, line:175 In Game::PlaceFood function swap operation is used to create new food item which releases old food object pointed by the shared pointer.
+2. Move semantic is used to move player name to game object from controller.
     * controller.cpp
-      * line:148 player_name string variable local to Controller::Start function is moved to game object once the player confirms name input by pressing "enter".
+      * line:129 player_name string variable local to Controller::Start function is moved to game object once the player confirms name input by pressing "enter".
 3. Smart pointer is used in most places instead of raw pointer to ensure proper memory management.
     * main.cpp
       * line:21 A shared pointer of Game class is created inside main, which is used to pass around inside Renderer and Controller.
@@ -66,30 +66,20 @@ This is a repo for the Capstone project in the [Udacity C++ Nanodegree Program](
       * line:57 menu stack holds shared pointers of class Menu to ensure proper allocation and deallocation of resources without hardcoding new/delete operations.
 
 ### Concurrency
-1. Multithreading is used to run Input control, Game, Render features in seperate threads. 
-    * main.cpp
-      * line:22 game thread
-      * line:25 controller thread
-      * renderer is run inside main thread
+1. Multithreading is used to run timer threads for super food,super snake
+    * game.cpp
+      * line:159, line:171, line:223 super food timer thread
+      * line:122, line:229 super snake timer thread
 2. Mutex and locks are used to enable to protect consistent shared data access.
-    * controller.cpp
-      * line:16 Ensures snake direction is not changed multiple time without snake head moving to a new location.
     * renderer.cpp
-      * line:73 (lock_guard) Ensures Menu is not changed between reading and rendering the same.
-      * line:156 (unique_lock) Ensures Foods are not changed between reading and rendering.
-      * line:171 (unique_lock) Ensures Snake is not changed beween reading and rendering.
+      * line:151 (unique_lock) Ensures super food is not changed between reading and rendering.
     * game.cpp
-      * line:57 (unique_lock) Ensures game update waits on user selection of menu option, used for cv_game condition variable.
-      * line:65 (unique_lock) Ensures game update waits on user name input confirmation, used for cv_game condition variable.
-      * line:100 (unique_lock) Locks snake mutex to ensure no access to snake while snake is being updated to ensure consistent access, is subsequently unlocked after snake is updated.
-      * line:120 (lock_guard) Ensures food is not access while being updated.
-      * line:185 In MenuAction function, menu updates combined with game state changes are protected with lock_guards.
-3. Condition variables are used to synchronize user input and game actions.
-    * controller.cpp
-      * line:17 snake cv_update condition variable waits on change of snake head position on the grid after changing the direction as per user input.
+      * line:276 (lock_guard) Ensures super snake timer conditions are changed in synchronous manner.
+      * line:266, line 108 (unique_lock) Ensures one thread at a time access food pointers.
+3. Condition variables are used for super food timer thread
     * game.cpp
-      * line:58 game thread waits on user to select a menu option to perform next action.
-      * line:66 game thread waits on user to confirm name input before performing next action.
+      * line:272 super food timer thread uses condition variable wait for either change of game state or the event where snake has eaten the super food.
+      * line:127 game action funciton notifies super food timer after snake has eaten the super food.
 
 ## Added Game Features
 1. At the start of the game user is asked to input their name which is used to store high scores.

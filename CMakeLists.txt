@@ -25,7 +25,7 @@ include_directories(${SDL2_INCLUDE_DIRS} src)
 include_directories(${SDL_TTF_INCLUDE_DIRS} src)
 
 
-add_executable(SnakeGame src/scoreManager.cpp src/food.cpp src/main.cpp src/menu.cpp src/timer.cpp src/game.cpp src/controller.cpp src/renderer.cpp src/snake.cpp )
+add_executable(SnakeGame src/scoreManager.cpp src/food.cpp src/main.cpp src/menu.cpp src/game.cpp src/controller.cpp src/renderer.cpp src/snake.cpp )
 string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 target_link_libraries(SnakeGame SDL2 SDL2_ttf)
 

@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "game.h"
 #include <iostream>
 #include<thread>
 #include<chrono>
@@ -60,32 +61,22 @@ Renderer::Renderer(const std::size_t screen_width,
 }
 
 //Start Rendering
-void Renderer::Start(std::shared_ptr<Game> game) {
+void Renderer::Render(std::shared_ptr<Game> game) {
 
-  
-  std::cout<<"Rendering started\n";
-  while(game->state!=GAMESTATE::END) {
-    switch(game->state) {
-      case GAMESTATE::NAME_INPUT:
-        Render(game->GetPlayerName());
-        break;
-      case GAMESTATE::ON_MENU: {
-        std::lock_guard<std::mutex> lckGrd(game->mtx_menu);
-        Menu* menu = game->GetCurrentMenu();
-        if(menu)
-          Render(menu,game); 
-        break;
-      }
-      case GAMESTATE::RUNNING:
-        Render(game->snake, game->GetNormalFood(), game->GetSuperFood(), game ); 
-        break;
-    }
-    SDL_RenderPresent(sdl_renderer);
-    
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  if(game->state!=GAMESTATE::END) {
+  switch(game->state) {
+    case GAMESTATE::NAME_INPUT:
+      Render(game->GetPlayerName());
+      break;
+    case GAMESTATE::ON_MENU:
+      Render(game->GetCurrentMenu(),game); 
+      break;
+    case GAMESTATE::RUNNING:
+      Render(game->snake, game->GetNormalFood(), game->GetSuperFood(), game ); 
+      break;
   }
-  
-  std::cout<<"Rendering stopped\n";
+    SDL_RenderPresent(sdl_renderer);
+  }
 }
 // Render Menu
 void Renderer::Render(Menu *menu,std::shared_ptr<Game> game) {
@@ -153,22 +144,20 @@ void Renderer::Render(Snake const &snake, Food* normal_food, Food* super_food, /
   
   
   // Render food
-  std::unique_lock<std::mutex> uLock_food(game->mtx_food);
   if(normal_food) {
     SDL_SetRenderDrawColor(sdl_renderer, normal_food->color.r, normal_food->color.g, normal_food->color.b, normal_food->color.a);
     AddBlockToRenderer(normal_food->point.x, normal_food->point.y,normal_food->size,normal_food->size);
   }
+  std::unique_lock<std::mutex> uLock(game->mtx_food);
   if(super_food) {
     SDL_SetRenderDrawColor(sdl_renderer, super_food->color.r, super_food->color.g, super_food->color.b, super_food->color.a);
     AddBlockToRenderer(super_food->point.x, super_food->point.y,super_food->size,super_food->size);
 
   }
-  uLock_food.unlock();
-
+  uLock.unlock();
   // Render snake's body  
   SDL_SetRenderDrawColor(sdl_renderer, snake.color.r, snake.color.g,snake.color.b,snake.color.a);
 
-  std::unique_lock<std::mutex> uLockSnake(game->mtx_snake);
   for(auto point = snake.body.begin();point!=snake.body.end();point++) {
     // AddBlockToRenderer(block, point->x * block.w, point->y * block.h);
     AddBlockToRenderer( point->x , point->y,1,1);
@@ -182,7 +171,6 @@ void Renderer::Render(Snake const &snake, Food* normal_food, Food* super_food, /
     SDL_SetRenderDrawColor(sdl_renderer, 0xFF, 0x00, 0x00, 0xFF);
   }
   AddBlockToRenderer(static_cast<int>(snake.head_x), static_cast<int>(snake.head_y), 1,1);
-  uLockSnake.unlock();
   
   //Add Score to the Game 
   RenderScore(game);

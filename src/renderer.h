@@ -7,13 +7,13 @@
 #include "snake.h"
 #include "menu.h"
 #include"food.h"
-#include"game.h"
+
 #include<memory>
 #include<string>
 #include <vector>
 #include<mutex>
 
-
+class Game;
 
 class Renderer {
  public:
@@ -21,7 +21,7 @@ class Renderer {
            const std::size_t grid_width, const std::size_t grid_height);
   ~Renderer();
 
-  void Start(std::shared_ptr<Game> game);
+  void Render(std::shared_ptr<Game> game);
   
 
  private:
@@ -39,7 +39,7 @@ class Renderer {
   const std::size_t screen_height;
   const std::size_t grid_height;
   const std::size_t grid_width;
-
+  
 
   void Render(Snake const &snake, Food* normal_food, Food* super_food, /*std::vector<std::shared_ptr<Food>*> const &food*/ std::shared_ptr<Game> game);
   void Render(Menu *menu,std::shared_ptr<Game>  game);
